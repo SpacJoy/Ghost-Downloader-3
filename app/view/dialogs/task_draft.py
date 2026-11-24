@@ -8,6 +8,7 @@ from PySide6.QtGui import QColor, QTextCursor
 from PySide6.QtWidgets import (
     QApplication, QDialog, QFileDialog, QHBoxLayout, QSizePolicy, QVBoxLayout,
 )
+from loguru import logger
 from qframelesswindow import FramelessDialog
 from qfluentwidgets import (
     FluentIcon, FluentStyleSheet, FluentTitleBar,
@@ -252,10 +253,13 @@ class TaskDraftDialog(MessageBoxBase):
     def addParsedTasks(self, tasks: list[Task], error: TaskError | None = None) -> None:
         if not tasks:
             return
+        # 浏览器扩展/aria2 推过来的任务：addParsedTasks 里 emit 时输入框还是空的，
+        # 等 URL 落进输入框后再刷一次，文件名才会回填
         newUrls = self._draft.addParsedTasks(tasks)
         if newUrls:
             self.urlRow.edit.appendPlainText("\n".join(newUrls))
         self._parseTimer.stop()
+        self._refreshStats()
         if error is not None:
             QTimer.singleShot(0, lambda: self._showAddError(tasks, error))
 
@@ -275,7 +279,6 @@ class TaskDraftDialog(MessageBoxBase):
         self.draftGroup.updateStats(0, 0, 0)
         self.draftGroup.setVisible(False)
         self.nameRow.setName("")
-        self.nameRow.setEnabled(False)
         self.metaColumn.setMeta(0, None)
 
         if self._isStandalone:
@@ -346,6 +349,8 @@ class TaskDraftDialog(MessageBoxBase):
 
     def _onCategoryEnabledChanged(self, isEnabled: bool) -> None:
         self.categoryRow.setVisible(isEnabled)
+        self.categoryRow.applyDefault()
+        self._onParseNeeded()
 
     def _onOptionsChanged(self) -> None:
         self._draft.setBaseOptions(self._options())
@@ -355,14 +360,20 @@ class TaskDraftDialog(MessageBoxBase):
         self._draft.setUrls(self._urls())
 
     def _onParseSucceeded(self, url: str, task: Task) -> None:
-        self._buildCard(url)
+        # 先回填名字再建卡片：建卡片出问题不该把文件名一起丢掉
         self._refreshStats()
+        try:
+            self._buildCard(url)
+        except Exception:
+            logger.opt(exception=True).warning("构建解析结果卡片失败 {}", url)
 
     def _buildCard(self, url: str) -> None:
         task = self._draft.taskByUrl(url)
         if task is None:
             return
         card = self._featureService.draftCard(task, self.draftGroup)
+        if card is None:
+            return
         card.categoryPicked.connect(lambda cid: self._draft.setUrlCategory(url, cid))
         card.editRequested.connect(lambda u=url: self._onEditRequested(u))
         self.draftGroup.addCard(url, card)
@@ -449,11 +460,12 @@ class TaskDraftDialog(MessageBoxBase):
     def _refreshStats(self) -> None:
         urls = self._urls()
         tasks = [self._draft.taskByUrl(url) for url in urls]
+        # 名字先刷：后面的统计、卡片刷新出异常也不该把文件名一起丢掉
+        self._refreshNameRow(urls, tasks)
         successCount = sum(1 for t in tasks if t is not None)
         totalSize = sum(t.fileSize for t in tasks if t is not None and t.fileSize > 0)
         self.draftGroup.updateStats(successCount, self._draft.failCount(), totalSize)
         self._refreshMeta(tasks)
-        self._refreshNameRow(urls, tasks)
         self._refreshParseSection(urls)
 
     def _refreshMeta(self, tasks: list) -> None:
@@ -471,8 +483,14 @@ class TaskDraftDialog(MessageBoxBase):
         return getattr(steps[0], "canUseRangeRequests", None)
 
     def _refreshNameRow(self, urls: list[str], tasks: list) -> None:
-        task = tasks[0] if len(urls) == 1 else None
-        self.nameRow.setEnabled(task is not None)
+        if len(urls) == 1:
+            task = tasks[0]
+        elif not urls:
+            # 解析回调可能早于 URL 落进输入框，这时以草稿里唯一的条目为准
+            items = self._draft.items()
+            task = items[0].task if len(items) == 1 else None
+        else:
+            task = None
         if task is None:
             self.nameRow.setName("")
             return

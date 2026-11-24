@@ -53,7 +53,17 @@ class NoticeStyle(Enum):
 class TaskPopupPlace(Enum):
     OFF = "Off"
     CORNER = "Corner"
-    TASKBAR = "Taskbar"
+
+
+class TaskPopupPlaceSerializer(EnumSerializer):
+    """旧配置里存着已删除的 "Taskbar"，直接 EnumSerializer 会抛 ValueError，
+    连带把 load() 后面所有配置项都留在默认值上，所以这里回落成弹窗显示。"""
+
+    def deserialize(self, value):
+        try:
+            return self.enumClass(value)
+        except ValueError:
+            return TaskPopupPlace.CORNER
 
 
 def canShowPopup() -> bool:
@@ -318,8 +328,9 @@ class Config(QConfig):
     )
     isNoticeSoundEnabled = ConfigItem("Notice", "SoundEnabled", True, BoolValidator())
     taskPopupPlace = OptionsConfigItem(
-        "Notice", "TaskPopupPlace", TaskPopupPlace.TASKBAR,
-        OptionsValidator(TaskPopupPlace), EnumSerializer(TaskPopupPlace),
+        "Notice", "TaskPopupPlace", TaskPopupPlace.CORNER,
+        OptionsValidator([TaskPopupPlace.CORNER, TaskPopupPlace.OFF]),
+        TaskPopupPlaceSerializer(TaskPopupPlace),
     )
     clipboardIgnoredPacks = ConfigItem("Software", "ClipboardIgnoredPacks", [], StringListValidator())
     geometry = ConfigItem(

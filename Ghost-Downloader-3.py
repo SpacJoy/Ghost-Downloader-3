@@ -67,7 +67,8 @@ def setupEnvironment() -> None:
 
 
 def startApp(application: Application, primaryInstance: PrimaryInstance, isSilent: bool = False) -> None:
-    from PySide6.QtGui import QIcon
+    from PySide6.QtCore import QPoint
+    from PySide6.QtGui import QGuiApplication, QIcon
     from app.config.cfg import NoticeStyle, TaskPopupPlace, cfg
     from app.view.dialogs.name_conflict import NameConflictPrompt
     from app.view.shell.clipboard_listener import ClipboardListener
@@ -236,9 +237,9 @@ def startApp(application: Application, primaryInstance: PrimaryInstance, isSilen
     taskService.tasksAllCompleted.connect(release)
 
     from app.platform.desktop_notification import (
-        PopupNotifier, PopupStack, SystemNotifier, buildClipboardRequest,
+        Popup, PopupNotifier, PopupStack, SystemNotifier, buildClipboardRequest,
         buildDiskSpaceInsufficient, buildPairRequest, buildParseFailed, buildTaskCompleted, buildTaskFailed,
-        createDoNotDisturb, toFileIcon,
+        createDoNotDisturb, playNotificationSound, toFileIcon,
     )
     systemNotifier = SystemNotifier(coroutineRunner.submit)
     sendTo = {NoticeStyle.SYSTEM: systemNotifier.send, NoticeStyle.OFF: lambda _: None}
@@ -283,24 +284,57 @@ def startApp(application: Application, primaryInstance: PrimaryInstance, isSilen
         sendTo[cfg.noticeStyle.value](notification)
 
     candidates: set[str] = set()
+    # 任务进度窗/完成窗是独立普通窗口，自己维护生命周期，不经过 PopupStack
+    taskWindows: dict[str, Popup] = {}
+    MAX_TASK_WINDOWS = 3
 
-    def showTaskPopup(task: Task, minimized: bool) -> None:
-        if popupStack is None:
+    def toTaskWindowPos(window: Popup) -> QPoint:
+        # 任务窗是独立窗口，居中摆放；多个窗口依次错开一点，免得完全重叠
+        screen = QGuiApplication.primaryScreen()
+        if screen is None:
+            return QPoint(0, 0)
+        area = screen.availableGeometry()
+        step = 24 * min(len(taskWindows), 6)
+        # width() 受 setFixedWidth 约束，sizeHint().width() 会偏小，横向用 width()
+        return QPoint(area.center().x() - window.width() // 2 + step,
+                      area.center().y() - window.sizeHint().height() // 2 + step)
+
+    def removeTaskWindow(popupId: str) -> None:
+        window = taskWindows.pop(popupId, None)
+        if window is None:
             return
+        # 窗口自己已经在走关闭流程时不要再 close 一次，否则事件重入
+        if not window.isExiting:
+            window.close()
+        window.deleteLater()
+
+    def bindTaskWindow(window: Popup, popupId: str, at: QPoint) -> None:
+        window.exited.connect(lambda: removeTaskWindow(popupId))
+        taskWindows[popupId] = window
+        window.move(at)
+        window.show()
+        window.raise_()
+
+    def showTaskPopup(task: Task) -> None:
         popupId = f"task:{task.taskId}"
-        if (popup := popupStack.popup(popupId)) is not None:
-            if minimized or not popup.isMinimized():
-                return
-            if popupStack.countShown("task:") >= 3:
-                return
-            popup.showNormal()
+        if (window := taskWindows.get(popupId)) is not None:
+            if window.isMinimized():
+                window.showNormal()
+            window.raise_()
             return
-        if not minimized and popupStack.countShown("task:") >= 3:
+        from app.models.task import TaskStatus
+        from app.view.shell.task_popup import TaskCompletedPopup, TaskPopup
+        # 已下完的任务从右键菜单叫出来的是完成窗，不是进度窗
+        if task.status == TaskStatus.COMPLETED:
+            window = TaskCompletedPopup(task)
+            window.hasSound = False
+            bindTaskWindow(window, popupId, toTaskWindowPos(window))
             return
-        from app.view.shell.task_popup import TaskPopup
-        popup = TaskPopup(task, taskService, speedMeter.speedChanged, plan)
-        popup.openOnTaskbar = minimized
-        popupStack.add(popup)
+        # 只限制同时在跑的进度窗数量，完成窗留在屏幕上等用户自己关
+        if sum(1 for item in taskWindows.values() if isinstance(item, TaskPopup)) >= MAX_TASK_WINDOWS:
+            return
+        window = TaskPopup(task, taskService, speedMeter.speedChanged, plan)
+        bindTaskWindow(window, popupId, toTaskWindowPos(window))
 
     def onTaskAdded(task: Task) -> None:
         candidates.add(task.taskId)
@@ -309,38 +343,48 @@ def startApp(application: Application, primaryInstance: PrimaryInstance, isSilen
         if task.taskId not in candidates:
             return
         candidates.discard(task.taskId)
-        if (popupStack is None or cfg.noticeStyle.value != NoticeStyle.POPUP
+        if (cfg.noticeStyle.value != NoticeStyle.POPUP
                 or cfg.taskPopupPlace.value == TaskPopupPlace.OFF):
             return
-        showTaskPopup(task, minimized=cfg.taskPopupPlace.value == TaskPopupPlace.TASKBAR)
+        showTaskPopup(task)
 
     def onTaskRemoved(taskId: str) -> None:
         candidates.discard(taskId)
-        if popupStack is not None:
-            popupStack.close(f"task:{taskId}")
+        removeTaskWindow(f"task:{taskId}")
 
     def onTaskCompleted(task: Task) -> None:
         popupId = f"task:{task.taskId}"
         # 已经在弹进度窗的任务，原地换成完成窗，不再叠一条系统通知
-        if popupStack is not None and popupStack.has(popupId):
-            from app.view.shell.task_popup import TaskCompletedPopup
-            popup = TaskCompletedPopup(task)
-            popup.hasSound = cfg.isNoticeSoundEnabled.value
-            popupStack.add(popup)
+        if (replaced := taskWindows.pop(popupId, None)) is None:
+            sendNotice(buildTaskCompleted(task, toFileIcon(task.outputPath)))
             return
-        sendNotice(buildTaskCompleted(task, toFileIcon(task.outputPath)))
+        position = replaced.pos()
+        replaced.close()
+        replaced.deleteLater()
+        from app.view.shell.task_popup import TaskCompletedPopup
+        window = TaskCompletedPopup(task)
+        window.hasSound = cfg.isNoticeSoundEnabled.value
+        bindTaskWindow(window, popupId, position)
+        if window.hasSound:
+            playNotificationSound()
 
     def onTaskFailed(task: Task) -> None:
         popupId = f"task:{task.taskId}"
-        if popupNotifier is not None and popupStack is not None and popupStack.has(popupId):
-            popupNotifier.send(buildTaskFailed(task, activate), popupId)
+        if taskWindows.get(popupId) is None:
+            return
+        removeTaskWindow(popupId)
+        sendNotice(buildTaskFailed(task, activate))
 
-    if popupStack is not None:
-        taskService.taskAdded.connect(onTaskAdded)
-        taskService.taskStarted.connect(onTaskStarted)
-        taskService.taskRemoved.connect(onTaskRemoved)
-        taskService.taskFailed.connect(onTaskFailed)
-        signalBus.taskPopupRequested.connect(lambda task: showTaskPopup(task, minimized=False))
+    def closeTaskWindows() -> None:
+        for popupId in list(taskWindows):
+            removeTaskWindow(popupId)
+
+    application.aboutToQuit.connect(closeTaskWindows)
+    taskService.taskAdded.connect(onTaskAdded)
+    taskService.taskStarted.connect(onTaskStarted)
+    taskService.taskRemoved.connect(onTaskRemoved)
+    taskService.taskFailed.connect(onTaskFailed)
+    signalBus.taskPopupRequested.connect(showTaskPopup)
     taskService.taskCompleted.connect(onTaskCompleted)
     taskService.diskSpaceInsufficient.connect(
         lambda free, needed: sendNotice(buildDiskSpaceInsufficient(free, needed, activate)))

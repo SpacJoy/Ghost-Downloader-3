@@ -19,45 +19,44 @@ from qfluentwidgets.common.font import setFont
 from app.format import toReadableSize
 from app.models.task import SpecialFileSize, TaskStatus
 from app.platform.desktop import openFile, revealInFolder, startFileDrag
-from app.platform.desktop_notification import (
-    FILE_ICON_SIZE, ICON_SPACING, PADDING, SPACING, Popup,
-)
+from app.platform.desktop_notification import CORNER_RADIUS, ICON_SPACING, PADDING, SPACING, Popup
 from app.services.plan import Plan, PlanAction
 
 # 图三/图四是完整的任务窗口而不是角标提示，比默认 364 宽一档才放得下三选项卡和完整文件名
-POPUP_WIDTH = 440
+POPUP_WIDTH = 560
 HEADER_HEIGHT = 32
 HEADER_TEXT_WIDTH = POPUP_WIDTH - 2 * PADDING - 16 - ICON_SPACING - 2 * 32 - 2 * SPACING
-TAB_HEIGHT = 28
-TAB_RADIUS = 5
-TAB_GAP = 16
-TAB_ICON_SIZE = 16
-TAB_ICON_GAP = 4
-TAB_PADDING_LEFT = 10
-TAB_PADDING_RIGHT = 12
+TAB_HEIGHT = 34
+TAB_RADIUS = 6
+TAB_GAP = 18
+TAB_ICON_SIZE = 18
+TAB_ICON_GAP = 6
+TAB_PADDING_LEFT = 12
+TAB_PADDING_RIGHT = 14
 TAB_TEXT = QColor(168, 168, 169), QColor(120, 120, 124)
 TAB_TEXT_CURRENT = QColor(214, 214, 214), QColor(38, 38, 40)
 TAB_FILL = QColor(42, 43, 47), QColor(0, 0, 0, 14)
-CONTENT_HEIGHT = 152
-INFO_LABEL_WIDTH = 123
+CONTENT_HEIGHT = 200
+INFO_LABEL_WIDTH = 160
 INFO_VALUE_WIDTH = POPUP_WIDTH - PADDING - INFO_LABEL_WIDTH - PADDING
-BUTTON_PADDING = 13
-BUTTON_ICON_SIZE = 14
-BUTTON_ICON_GAP = 4
-BAR_HEIGHT = 14
+BUTTON_PADDING = 18
+BUTTON_ICON_SIZE = 16
+BUTTON_ICON_GAP = 6
+BAR_HEIGHT = 16
 CORNER = 6
-FOOTER_TOP = 8
-FOOTER_BOTTOM = 12
-FOOTER_SPACING = 8
-BUTTON_HEIGHT = 27
-BUTTON_RADIUS = 3
+FOOTER_TOP = 10
+FOOTER_BOTTOM = 14
+FOOTER_SPACING = 10
+BUTTON_HEIGHT = 34
+BUTTON_RADIUS = 5
 BUTTON_FILL = QColor(42, 43, 47), QColor(253, 253, 253)
 BUTTON_BORDER = QColor(60, 61, 64), QColor(198, 198, 203)
 BUTTON_TEXT = QColor(214, 214, 214), QColor(32, 32, 34)
 FOOTER_FILL = QColor(36, 37, 41), QColor(0, 0, 0, 0)
 FOOTER_LINE = QColor(58, 58, 61), QColor(0, 0, 0, 20)
 SPEED_SAMPLE_COUNT = 60
-CHECK_MARK_SIZE = 26
+CHECK_MARK_SIZE = 30
+DONE_ICON_SIZE = 36
 DONE_GREEN = QColor("#0f7b0f"), QColor("#6ccb5f")
 SUB_TEXT_COLOR = QColor(0, 0, 0, 155), QColor(255, 255, 255, 155)
 
@@ -119,14 +118,15 @@ class BoltIcon:
 class MinimizeButton(TransparentToolButton):
     """FluentIcon.MINIMIZE 是带箭头的方框，参考图用的是简单一横"""
 
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, isHidden: bool = True):
         super().__init__(parent)
         self._icon = None  # 不画图标，只画自己的一横
         self.setFixedSize(32, 32)
         policy = self.sizePolicy()
         policy.setRetainSizeWhenHidden(True)
         self.setSizePolicy(policy)
-        self.hide()
+        if isHidden:
+            self.hide()
 
     def paintEvent(self, event):
         super().paintEvent(event)
@@ -410,6 +410,22 @@ class FooterButton(QWidget):
                          Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, self._text)
 
 
+class DragButton(FooterButton):
+    def __init__(self, paths: list[Path], parent=None):
+        super().__init__(FluentIcon.MOVE, parent, isIconOnly=True)
+        self._paths = paths
+
+    def mousePressEvent(self, event):
+        if event.button() != Qt.MouseButton.LeftButton:
+            super().mousePressEvent(event)
+            return
+        # 松开后才开始拖就晚了：Windows 的 SHDoDragDrop 需要鼠标还按着，否则立即返回
+        QTimer.singleShot(0, lambda: startFileDrag(self._paths, self))
+
+    def mouseReleaseEvent(self, event):
+        pass
+
+
 class Footer(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -418,8 +434,20 @@ class Footer(QWidget):
     def paintEvent(self, event):
         isDark = isDarkTheme()
         painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        # 窗口本身是圆角，底部底色整块铺满会把两个下圆角糊成直角
+        width, height, radius = self.width(), self.height(), CORNER_RADIUS
+        path = QPainterPath()
+        path.moveTo(0, 0)
+        path.lineTo(width, 0)
+        path.lineTo(width, height - radius)
+        path.arcTo(QRectF(width - 2 * radius, height - 2 * radius, 2 * radius, 2 * radius), 0, -90)
+        path.lineTo(radius, height)
+        path.arcTo(QRectF(0, height - 2 * radius, 2 * radius, 2 * radius), 270, -90)
+        path.closeSubpath()
+        painter.setClipPath(path)
         painter.fillRect(self.rect(), _pick(FOOTER_FILL, isDark))
-        painter.fillRect(0, 0, self.width(), 1, _pick(FOOTER_LINE, isDark))
+        painter.fillRect(0, 0, width, 1, _pick(FOOTER_LINE, isDark))
 
 
 def _toNiceScale(value: float) -> float:
@@ -492,6 +520,7 @@ class SpeedChart(QWidget):
 
 class TaskPopup(Popup):
     hasTaskbarButton = True
+    isStandalone = True
 
     def __init__(self, task: Task, taskService: TaskService, speedChanged: Signal, plan: Plan | None = None):
         super().__init__()
@@ -519,7 +548,7 @@ class TaskPopup(Popup):
             from app.platform.taskbar import setWindowAppId
             setWindowAppId(int(self.winId()), f"{DESKTOP_ID}.{self._task.taskId.replace('_', '-')}")
         self.setFixedWidth(POPUP_WIDTH)
-        self.minimizeButton = MinimizeButton(self)
+        self.minimizeButton = MinimizeButton(self, isHidden=False)
         self.headerButtons.insert(0, self.minimizeButton)
 
         self.tabBar = TabBar(self)
@@ -538,7 +567,7 @@ class TaskPopup(Popup):
         if self._task.fileSize in {SpecialFileSize.UNKNOWN, SpecialFileSize.NOT_SUPPORTED}:
             self.progressBar.setIndeterminate(True)
 
-        self.expandButton = FooterButton(FluentIcon.ARROW_DOWN, self, isIconOnly=True)
+        self.expandButton = FooterButton(FluentIcon.UP, self, isIconOnly=True)
         self.expandButton.setToolTip(self.tr("收起详情"))
         self.toggleButton = FooterButton(None, self)
         self.cancelButton = FooterButton(None, self, text=self.tr("取消"))
@@ -546,9 +575,9 @@ class TaskPopup(Popup):
     def _buildInfoPage(self) -> QWidget:
         page = QWidget(self)
         grid = QGridLayout(page)
-        grid.setContentsMargins(PADDING, 10, PADDING, 0)
+        grid.setContentsMargins(PADDING, 14, PADDING, 0)
         grid.setHorizontalSpacing(0)
-        grid.setVerticalSpacing(2)
+        grid.setVerticalSpacing(7)
         grid.setColumnStretch(1, 1)
 
         self.infoValues: dict[str, QLabel] = {}
@@ -565,9 +594,10 @@ class TaskPopup(Popup):
             caption = CaptionLabel(title, page)
             caption.setTextColor(*SUB_TEXT_COLOR)
             caption.setFixedWidth(INFO_LABEL_WIDTH)
+            setFont(caption, 13)
             value = BodyLabel(page)
             # 参考图里标签和值同一字号，BodyLabel 默认 14px 会把长文件名挤到省略
-            setFont(value, 12)
+            setFont(value, 13)
             value.setTextInteractionFlags(Qt.TextInteractionFlag.NoTextInteraction)
             grid.addWidget(caption, row, 0)
             grid.addWidget(value, row, 1)
@@ -741,7 +771,7 @@ class TaskPopup(Popup):
         self.tabRow.setVisible(self._isExpanded)
         self.tabLine.setVisible(self._isExpanded)
         self.stack.setVisible(self._isExpanded)
-        self.expandButton.setIcon(FluentIcon.ARROW_DOWN if self._isExpanded else FluentIcon.UP)
+        self.expandButton.setIcon(FluentIcon.UP if self._isExpanded else FluentIcon.ARROW_DOWN)
         self.expandButton.setToolTip(self.tr("收起详情") if self._isExpanded else self.tr("展开详情"))
         self._fitHeight()
         self.layoutChanged.emit()
@@ -851,6 +881,9 @@ class CheckMark(QWidget):
 
 class TaskCompletedPopup(Popup):
     hasTaskbarButton = True
+    isStandalone = True
+    # 完成提示要一直浮在上面，别被主窗口盖住
+    isAlwaysOnTop = True
 
     def __init__(self, task: Task):
         super().__init__()
@@ -870,30 +903,31 @@ class TaskCompletedPopup(Popup):
             from app.platform.taskbar import setWindowAppId
             setWindowAppId(int(self.winId()), f"{DESKTOP_ID}.{self._task.taskId.replace('_', '-')}")
         self.setFixedWidth(POPUP_WIDTH)
-        self.minimizeButton = MinimizeButton(self)
+        self.minimizeButton = MinimizeButton(self, isHidden=False)
         self.headerButtons.insert(0, self.minimizeButton)
         self.appNameLabel.setText(self.appNameLabel.fontMetrics().elidedText(
             self._task.name, Qt.TextElideMode.ElideMiddle, HEADER_TEXT_WIDTH))
         self.appNameLabel.setToolTip(self._task.name)
 
         self.iconLabel = QLabel(self)
+        self.iconLabel.setFixedSize(DONE_ICON_SIZE, DONE_ICON_SIZE)
         self.iconLabel.setPixmap(self._toPixmap(
-            QFileIconProvider().icon(QFileInfo(self._task.outputPath)).pixmap(FILE_ICON_SIZE, FILE_ICON_SIZE),
-            FILE_ICON_SIZE))
+            QFileIconProvider().icon(QFileInfo(self._task.outputPath)).pixmap(DONE_ICON_SIZE, DONE_ICON_SIZE),
+            DONE_ICON_SIZE))
         self.titleLabel = StrongBodyLabel(self.tr("下载已完成"), self)
         self.titleLabel.setTextColor(*DONE_GREEN)
-        setFont(self.titleLabel, 20)
+        setFont(self.titleLabel, 22)
         self.sizeLabel = BodyLabel(self)
         self.sizeLabel.setText(toReadableSize(self._task.fileSize))
         self.nameLabel = BodyLabel(self)
         self.nameLabel.setText(self.nameLabel.fontMetrics().elidedText(
             self._task.name, Qt.TextElideMode.ElideMiddle,
-            POPUP_WIDTH - 2 * PADDING - FILE_ICON_SIZE - ICON_SPACING))
+            POPUP_WIDTH - 2 * PADDING - DONE_ICON_SIZE - ICON_SPACING))
         self.nameLabel.setToolTip(self._task.name)
 
         self.openButton = FooterButton(None, self, text=self.tr("打开"))
         self.revealButton = FooterButton(None, self, text=self.tr("打开文件夹"))
-        self.dragButton = FooterButton(FluentIcon.MOVE, self, isIconOnly=True)
+        self.dragButton = DragButton([Path(self._task.outputPath)], self)
         self.dragButton.setToolTip(self.tr("拖拽文件"))
         self.closeButton2 = FooterButton(None, self, text=self.tr("关闭"))
 
@@ -905,9 +939,9 @@ class TaskCompletedPopup(Popup):
 
         body = QWidget(self)
         grid = QGridLayout(body)
-        grid.setContentsMargins(PADDING, 8, PADDING, 20)
+        grid.setContentsMargins(PADDING, 14, PADDING, 22)
         grid.setHorizontalSpacing(ICON_SPACING)
-        grid.setVerticalSpacing(2)
+        grid.setVerticalSpacing(6)
         grid.setColumnStretch(1, 1)
 
         titleRow = QHBoxLayout()
@@ -917,10 +951,11 @@ class TaskCompletedPopup(Popup):
         titleRow.addWidget(self.titleLabel, 0, Qt.AlignmentFlag.AlignVCenter)
         titleRow.addStretch(1)
 
-        grid.addWidget(self.iconLabel, 0, 0, 2, 1, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        # 图标只占标题行；跨两行会盖住下面的大小文字
+        grid.addWidget(self.iconLabel, 0, 0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
         grid.addLayout(titleRow, 0, 1)
-        grid.addWidget(self.sizeLabel, 1, 0, Qt.AlignmentFlag.AlignLeft)
-        grid.addWidget(self.nameLabel, 1, 1)
+        grid.addWidget(self.sizeLabel, 1, 0, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        grid.addWidget(self.nameLabel, 1, 1, Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self.vBoxLayout.addWidget(body, 1)
 
         self.footer = Footer(self)
@@ -941,7 +976,6 @@ class TaskCompletedPopup(Popup):
         self.openButton.clicked.connect(lambda: self._activate(openFile))
         self.revealButton.clicked.connect(lambda: self._activate(revealInFolder))
         self.closeButton2.clicked.connect(lambda: self.exit(isDismissed=False))
-        self.dragButton.clicked.connect(lambda: startFileDrag([Path(self._task.outputPath)], self))
         self.clicked.connect(lambda: self._activate(openFile))
 
     def _activate(self, action) -> None:

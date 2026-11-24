@@ -22,6 +22,8 @@ log/
 
 # 忽略构建文件
 build/
+build-ghd/
+build-updater/
 dist/*
 !dist/packs/
 output/
@@ -45,3 +47,10 @@ browser_extension/firefox/
 
 # Android 是独立的私有仓库
 /android/
+
+# CodeGraph 本地索引
+/.codegraph/
+
+# 运行期生成与本地临时产物
+/config/
+/tmp/

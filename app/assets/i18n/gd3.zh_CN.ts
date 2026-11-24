@@ -1256,7 +1256,7 @@ http://example.com/{mp4,mkv}/video</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/components/draft_form.py" line="96"/>
+        <location filename="../../view/components/draft_form.py" line="97"/>
         <source>自动</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3023,12 +3023,12 @@ http://example.com/{mp4,mkv}/video</source>
 <context>
     <name>MetaColumn</name>
     <message>
-        <location filename="../../view/components/draft_form.py" line="173"/>
+        <location filename="../../view/components/draft_form.py" line="178"/>
         <source>支持续传</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/components/draft_form.py" line="176"/>
+        <location filename="../../view/components/draft_form.py" line="181"/>
         <source>不支持续传</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3049,7 +3049,7 @@ http://example.com/{mp4,mkv}/video</source>
 <context>
     <name>MultiFileTaskCard</name>
     <message>
-        <location filename="../../view/cards/task_cards.py" line="586"/>
+        <location filename="../../view/cards/task_cards.py" line="591"/>
         <source>{0}/{1} 个文件</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3118,7 +3118,7 @@ http://example.com/{mp4,mkv}/video</source>
 <context>
     <name>NameRow</name>
     <message>
-        <location filename="../../view/components/draft_form.py" line="285"/>
+        <location filename="../../view/components/draft_form.py" line="290"/>
         <source>文件名，留空则从链接自动推断</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3126,103 +3126,103 @@ http://example.com/{mp4,mkv}/video</source>
 <context>
     <name>Notifications</name>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="90"/>
+        <location filename="../../platform/desktop_notification.py" line="113"/>
         <source>下载完成</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="91"/>
+        <location filename="../../platform/desktop_notification.py" line="114"/>
         <source>大小 {0}，保存于 {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="95"/>
+        <location filename="../../platform/desktop_notification.py" line="118"/>
         <source>打开文件</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="97"/>
+        <location filename="../../platform/desktop_notification.py" line="120"/>
         <source>打开文件夹</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="109"/>
+        <location filename="../../platform/desktop_notification.py" line="132"/>
         <source>磁盘空间不足</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="110"/>
+        <location filename="../../platform/desktop_notification.py" line="133"/>
         <source>任务未自动开始
 剩余 {0}，需要 {1}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="122"/>
+        <location filename="../../platform/desktop_notification.py" line="145"/>
         <source>链接解析失败</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="135"/>
+        <location filename="../../platform/desktop_notification.py" line="158"/>
         <source>下载失败</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="146"/>
+        <location filename="../../platform/desktop_notification.py" line="169"/>
         <source>等 {0} 个链接</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="148"/>
+        <location filename="../../platform/desktop_notification.py" line="171"/>
         <source>检测到下载链接</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="151"/>
+        <location filename="../../platform/desktop_notification.py" line="174"/>
         <source>下载</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="152"/>
+        <location filename="../../platform/desktop_notification.py" line="175"/>
         <source>忽略</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="159"/>
+        <location filename="../../platform/desktop_notification.py" line="182"/>
         <source>浏览器扩展</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="160"/>
+        <location filename="../../platform/desktop_notification.py" line="183"/>
         <source>未知</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="162"/>
+        <location filename="../../platform/desktop_notification.py" line="185"/>
         <source>浏览器扩展配对请求</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="164"/>
+        <location filename="../../platform/desktop_notification.py" line="187"/>
         <source>{0} {1} 请求连接</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="165"/>
+        <location filename="../../platform/desktop_notification.py" line="188"/>
         <source>来源: {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="166"/>
+        <location filename="../../platform/desktop_notification.py" line="189"/>
         <source>仅在你刚刚点击扩展里的&quot;自动配对&quot;时允许</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="169"/>
+        <location filename="../../platform/desktop_notification.py" line="192"/>
         <source>允许配对</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../platform/desktop_notification.py" line="170"/>
+        <location filename="../../platform/desktop_notification.py" line="193"/>
         <source>拒绝</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3323,17 +3323,17 @@ http://example.com/{mp4,mkv}/video</source>
 <context>
     <name>PathRow</name>
     <message>
-        <location filename="../../view/components/draft_form.py" line="186"/>
+        <location filename="../../view/components/draft_form.py" line="191"/>
         <source>默认</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/components/draft_form.py" line="197"/>
+        <location filename="../../view/components/draft_form.py" line="202"/>
         <source>恢复默认下载路径</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/components/draft_form.py" line="198"/>
+        <location filename="../../view/components/draft_form.py" line="203"/>
         <source>下载设置</source>
         <translation type="unfinished"></translation>
     </message>
@@ -3534,12 +3534,12 @@ http://example.com/{mp4,mkv}/video</source>
 <context>
     <name>Presets</name>
     <message>
-        <location filename="../../config/cfg.py" line="221"/>
+        <location filename="../../config/cfg.py" line="231"/>
         <source>默认</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../config/cfg.py" line="348"/>
+        <location filename="../../config/cfg.py" line="359"/>
         <source>百度网盘客户端</source>
         <translation type="unfinished"></translation>
     </message>
@@ -4524,11 +4524,6 @@ http://example.com/{mp4,mkv}/video</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/pages/setting_page.py" line="317"/>
-        <source>显示于任务栏</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../../view/pages/setting_page.py" line="336"/>
         <source>通知方式</source>
         <translation type="unfinished"></translation>
@@ -4827,7 +4822,7 @@ http://example.com/{mp4,mkv}/video</source>
 <context>
     <name>SubworkerRow</name>
     <message>
-        <location filename="../../view/components/draft_form.py" line="235"/>
+        <location filename="../../view/components/draft_form.py" line="240"/>
         <source>预分配线程数</source>
         <translation type="unfinished"></translation>
     </message>
@@ -4985,31 +4980,36 @@ http://example.com/{mp4,mkv}/video</source>
     </message>
     <message>
         <location filename="../../view/cards/task_cards.py" line="454"/>
-        <source>复制下载链接</source>
+        <source>在单独弹窗中显示</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../../view/cards/task_cards.py" line="459"/>
+        <source>复制下载链接</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../../view/cards/task_cards.py" line="464"/>
         <source>编辑任务参数...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/cards/task_cards.py" line="463"/>
+        <location filename="../../view/cards/task_cards.py" line="468"/>
         <source>移到最前</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/cards/task_cards.py" line="467"/>
+        <location filename="../../view/cards/task_cards.py" line="472"/>
         <source>重新下载</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/cards/task_cards.py" line="472"/>
+        <location filename="../../view/cards/task_cards.py" line="477"/>
         <source>移动到分类</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/cards/task_cards.py" line="474"/>
+        <location filename="../../view/cards/task_cards.py" line="479"/>
         <source>未分类</source>
         <translation type="unfinished"></translation>
     </message>
@@ -5075,27 +5075,27 @@ http://example.com/{mp4,mkv}/video</source>
 <context>
     <name>TaskCompletedPopup</name>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="883"/>
+        <location filename="../../view/shell/task_popup.py" line="917"/>
         <source>下载已完成</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="894"/>
+        <location filename="../../view/shell/task_popup.py" line="928"/>
         <source>打开</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="895"/>
+        <location filename="../../view/shell/task_popup.py" line="929"/>
         <source>打开文件夹</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="897"/>
+        <location filename="../../view/shell/task_popup.py" line="931"/>
         <source>拖拽文件</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="898"/>
+        <location filename="../../view/shell/task_popup.py" line="932"/>
         <source>关闭</source>
         <translation type="unfinished"></translation>
     </message>
@@ -5103,53 +5103,53 @@ http://example.com/{mp4,mkv}/video</source>
 <context>
     <name>TaskDraftDialog</name>
     <message>
-        <location filename="../../view/dialogs/task_draft.py" line="92"/>
+        <location filename="../../view/dialogs/task_draft.py" line="93"/>
         <source>添加任务</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/dialogs/task_draft.py" line="101"/>
+        <location filename="../../view/dialogs/task_draft.py" line="102"/>
         <source>批量添加</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/dialogs/task_draft.py" line="102"/>
-        <location filename="../../view/dialogs/task_draft.py" line="518"/>
+        <location filename="../../view/dialogs/task_draft.py" line="103"/>
+        <location filename="../../view/dialogs/task_draft.py" line="536"/>
         <source>导入文件</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/dialogs/task_draft.py" line="130"/>
+        <location filename="../../view/dialogs/task_draft.py" line="131"/>
         <source>下载</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/dialogs/task_draft.py" line="132"/>
+        <location filename="../../view/dialogs/task_draft.py" line="133"/>
         <source>稍后下载</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/dialogs/task_draft.py" line="138"/>
+        <location filename="../../view/dialogs/task_draft.py" line="139"/>
         <source>取消</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/dialogs/task_draft.py" line="417"/>
+        <location filename="../../view/dialogs/task_draft.py" line="428"/>
         <source>无法添加任务</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/dialogs/task_draft.py" line="426"/>
+        <location filename="../../view/dialogs/task_draft.py" line="437"/>
         <source>更改默认文件夹</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/dialogs/task_draft.py" line="432"/>
+        <location filename="../../view/dialogs/task_draft.py" line="443"/>
         <source>选择默认下载文件夹</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/dialogs/task_draft.py" line="513"/>
+        <location filename="../../view/dialogs/task_draft.py" line="531"/>
         <source>所有可导入文件 ({0})</source>
         <translation type="unfinished"></translation>
     </message>
@@ -5839,194 +5839,194 @@ http://example.com/{mp4,mkv}/video</source>
 <context>
     <name>TaskPopup</name>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="67"/>
+        <location filename="../../view/shell/task_popup.py" line="66"/>
         <source>{0} 秒</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="71"/>
+        <location filename="../../view/shell/task_popup.py" line="70"/>
         <source>{0} 分 {1} 秒</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="72"/>
+        <location filename="../../view/shell/task_popup.py" line="71"/>
         <source>{0} 分</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="75"/>
+        <location filename="../../view/shell/task_popup.py" line="74"/>
         <source>{0} 小时 {1} 分</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="76"/>
+        <location filename="../../view/shell/task_popup.py" line="75"/>
         <source>{0} 小时</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="81"/>
+        <location filename="../../view/shell/task_popup.py" line="80"/>
         <source>正在下载</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="83"/>
+        <location filename="../../view/shell/task_popup.py" line="82"/>
         <source>已暂停</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="85"/>
+        <location filename="../../view/shell/task_popup.py" line="84"/>
         <source>已完成</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="87"/>
+        <location filename="../../view/shell/task_popup.py" line="86"/>
         <source>已失败</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="88"/>
+        <location filename="../../view/shell/task_popup.py" line="87"/>
         <source>等待中</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="527"/>
+        <location filename="../../view/shell/task_popup.py" line="556"/>
         <source>信息</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="528"/>
+        <location filename="../../view/shell/task_popup.py" line="557"/>
         <source>速度</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="529"/>
+        <location filename="../../view/shell/task_popup.py" line="558"/>
         <source>完成后</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="542"/>
-        <location filename="../../view/shell/task_popup.py" line="745"/>
+        <location filename="../../view/shell/task_popup.py" line="571"/>
+        <location filename="../../view/shell/task_popup.py" line="775"/>
         <source>收起详情</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="544"/>
+        <location filename="../../view/shell/task_popup.py" line="573"/>
         <source>取消</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="556"/>
+        <location filename="../../view/shell/task_popup.py" line="585"/>
         <source>名称：</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="557"/>
+        <location filename="../../view/shell/task_popup.py" line="586"/>
         <source>状态：</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="558"/>
+        <location filename="../../view/shell/task_popup.py" line="587"/>
         <source>大小：</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="559"/>
+        <location filename="../../view/shell/task_popup.py" line="588"/>
         <source>已下载：</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="560"/>
+        <location filename="../../view/shell/task_popup.py" line="589"/>
         <source>速度：</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="561"/>
+        <location filename="../../view/shell/task_popup.py" line="590"/>
         <source>剩余时间：</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="562"/>
+        <location filename="../../view/shell/task_popup.py" line="591"/>
         <source>断点续传：</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="597"/>
+        <location filename="../../view/shell/task_popup.py" line="627"/>
         <source>所有任务完成后执行</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="603"/>
+        <location filename="../../view/shell/task_popup.py" line="633"/>
         <source>无</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="604"/>
+        <location filename="../../view/shell/task_popup.py" line="634"/>
         <source>关机</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="605"/>
+        <location filename="../../view/shell/task_popup.py" line="635"/>
         <source>重启</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="606"/>
+        <location filename="../../view/shell/task_popup.py" line="636"/>
         <source>睡眠</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="607"/>
+        <location filename="../../view/shell/task_popup.py" line="637"/>
         <source>打开文件</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="618"/>
+        <location filename="../../view/shell/task_popup.py" line="648"/>
         <source>选择要打开的文件</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="621"/>
-        <location filename="../../view/shell/task_popup.py" line="686"/>
+        <location filename="../../view/shell/task_popup.py" line="651"/>
+        <location filename="../../view/shell/task_popup.py" line="716"/>
         <source>选择文件</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="702"/>
+        <location filename="../../view/shell/task_popup.py" line="732"/>
         <source>未知</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="706"/>
+        <location filename="../../view/shell/task_popup.py" line="736"/>
         <source>剩余 {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="709"/>
+        <location filename="../../view/shell/task_popup.py" line="739"/>
         <source>是</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="709"/>
+        <location filename="../../view/shell/task_popup.py" line="739"/>
         <source>否</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="714"/>
+        <location filename="../../view/shell/task_popup.py" line="744"/>
         <source>当前 {0}/s，峰值 {1}/s</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="745"/>
+        <location filename="../../view/shell/task_popup.py" line="775"/>
         <source>展开详情</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="721"/>
+        <location filename="../../view/shell/task_popup.py" line="751"/>
         <source>继续</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/task_popup.py" line="721"/>
+        <location filename="../../view/shell/task_popup.py" line="751"/>
         <source>暂停</source>
         <translation type="unfinished"></translation>
     </message>
@@ -6568,7 +6568,7 @@ http://example.com/{mp4,mkv}/video</source>
 <context>
     <name>self._dialog</name>
     <message>
-        <location filename="../../view/dialogs/task_draft.py" line="50"/>
+        <location filename="../../view/dialogs/task_draft.py" line="51"/>
         <source>添加任务</source>
         <translation type="unfinished"></translation>
     </message>

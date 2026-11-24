@@ -70,6 +70,29 @@ def extractResource(resource: str) -> Path:
     return path
 
 
+_lastSoundAt = float("-inf")
+
+
+def playNotificationSound() -> None:
+    # 多个任务同时完成时只响一声
+    global _lastSoundAt
+    if time.monotonic() - _lastSoundAt < SOUND_INTERVAL:
+        return
+    _lastSoundAt = time.monotonic()
+    path = str(extractResource(SOUND_RESOURCE))
+    if sys.platform == "win32":
+        import winsound
+        winsound.PlaySound(path, winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_NODEFAULT)
+        return
+    for command in (("pw-play", "--media-role=Notification"),
+                    ("paplay", "--property=media.role=event"),
+                    ("canberra-gtk-play", "-f")):
+        if executable := shutil.which(command[0]):
+            subprocess.Popen([executable, *command[1:], path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return
+    logger.debug("找不到播放器，跳过提示音")
+
+
 def toFileIcon(path: str) -> Icon | None:
     # 系统通知异步读图标，固定文件名会被下一个任务覆盖
     suffix = Path(path).suffix.lstrip(".").lower() or "folder"
@@ -336,30 +359,42 @@ class Popup(QWidget):
     clicked = QtSignal()
     layoutChanged = QtSignal()
     hasTaskbarButton = False
+    # 独立窗口：普通可拖动窗口，不进 PopupStack，关闭即销毁
+    isStandalone = False
+    # 独立窗口要不要压在其它窗口上面（完成提示要，进度窗不用）
+    isAlwaysOnTop = False
 
     def __init__(self):
         super().__init__()
         self.popupId: str | None = None
-        self.openOnTaskbar = False
         self.duration = 0
         self.hasSound = False
         self.isExiting = False
         self._isHovered = False
         self._targetPos = QPoint()
         self._pressX: float | None = None
+        self._dragOffset: QPoint | None = None
 
     @property
     def isLongLived(self) -> bool:
         return self.duration == 0
 
     def _initWidget(self) -> None:
-        flags = (Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint
-                 | Qt.WindowType.WindowDoesNotAcceptFocus)
-        self.setWindowFlags(flags if self.hasTaskbarButton else flags | Qt.WindowType.Tool)
-        self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
-        self.setAttribute(Qt.WidgetAttribute.WA_X11DoNotAcceptFocus)
-        self._isAcrylic = isGreaterEqualWin11()
-        if sys.platform != "win32" or self._isAcrylic:
+        if self.isStandalone:
+            flags = Qt.WindowType.Window | Qt.WindowType.FramelessWindowHint
+            if self.isAlwaysOnTop:
+                flags |= Qt.WindowType.WindowStaysOnTopHint
+        else:
+            flags = (Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint
+                     | Qt.WindowType.WindowDoesNotAcceptFocus)
+            flags = flags if self.hasTaskbarButton else flags | Qt.WindowType.Tool
+        self.setWindowFlags(flags)
+        if not self.isStandalone:
+            self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
+            self.setAttribute(Qt.WidgetAttribute.WA_X11DoNotAcceptFocus)
+        # 独立窗口要跟普通对话框一样是实心底色，亚克力模糊只给通知角标用
+        self._isAcrylic = False if self.isStandalone else isGreaterEqualWin11()
+        if self.isStandalone or sys.platform != "win32" or self._isAcrylic:
             self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setFixedWidth(WIDTH)
         self.windowEffect = None
@@ -416,7 +451,8 @@ class Popup(QWidget):
         policy = button.sizePolicy()
         policy.setRetainSizeWhenHidden(True)
         button.setSizePolicy(policy)
-        button.hide()
+        if not self.isStandalone:
+            button.hide()
         return button
 
     def _toPixmap(self, pixmap: QPixmap, size: int) -> QPixmap:
@@ -430,16 +466,6 @@ class Popup(QWidget):
         isMoved = pos != self._targetPos
         self._targetPos = pos
         if self.windowState() & Qt.WindowState.WindowMinimized:
-            return
-        if self.openOnTaskbar:
-            self.openOnTaskbar = False
-            self._detachFromActiveWindow()
-            if sys.platform == "win32":
-                from app.platform.taskbar import minimizeWithoutActivating
-                minimizeWithoutActivating(int(self.winId()), pos.x(), pos.y(), self.width(), self.height())
-                return
-            self.move(pos)
-            self.showMinimized()
             return
         if not self.isVisible():
             self._detachFromActiveWindow()
@@ -470,6 +496,9 @@ class Popup(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         if isDismissed:
             self.dismissed.emit()
+        if self.isStandalone:
+            self.exited.emit()
+            return
         self._animate(QPoint(self._targetPos.x() + self.width() + SCREEN_MARGIN, self.y()),
                       EXIT_DURATION, EXIT_CURVE)
 
@@ -509,6 +538,11 @@ class Popup(QWidget):
     def showEvent(self, event) -> None:
         super().showEvent(event)
         # 显示前写入的还原坐标还没落到正确屏幕上
+        if self.isStandalone:
+            if self.isAlwaysOnTop:
+                # 刚建出来的窗口先压在活动窗口下面，抬一次才真的置顶
+                QTimer.singleShot(0, self.raise_)
+            return
         if event.spontaneous() and not self.isMinimized():
             self.move(self._targetPos)
 
@@ -519,6 +553,13 @@ class Popup(QWidget):
 
     def closeEvent(self, event) -> None:
         if event.spontaneous():
+            if self.isStandalone:
+                # 独立窗口按 Alt+F4 应当真的关掉，而不是滑出后留个空壳
+                if not self.isExiting:
+                    self.isExiting = True
+                    self.exited.emit()
+                event.accept()
+                return
             event.ignore()
             self.exit(isDismissed=True)
             return
@@ -533,10 +574,16 @@ class Popup(QWidget):
         isDark = isDarkTheme()
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        radius = 0 if sys.platform == "win32" and not self._isAcrylic else CORNER_RADIUS
+        radius = CORNER_RADIUS if self.isStandalone else (
+            0 if sys.platform == "win32" and not self._isAcrylic else CORNER_RADIUS)
         if self._isAcrylic:
             # layered 窗口里全透明的像素会让鼠标点穿
             painter.fillRect(self.rect(), QColor(0, 0, 0, 1))
+        elif self.isStandalone:
+            # 跟普通对话框一样的实心底色，别带通知角标那层半透明
+            painter.setBrush(QColor(43, 43, 43) if isDark else QColor(249, 249, 249))
+            painter.setPen(Qt.PenStyle.NoPen)
+            painter.drawRoundedRect(QRectF(self.rect()), radius, radius)
         else:
             painter.setBrush(QColor(44, 44, 44) if isDark else QColor(249, 249, 249))
             painter.setPen(QColor(255, 255, 255, 20) if isDark else QColor(0, 0, 0, 15))
@@ -547,6 +594,8 @@ class Popup(QWidget):
             painter.drawRoundedRect(QRectF(self.rect()), radius, radius)
 
     def _setHovered(self, isHovered: bool) -> None:
+        if self.isStandalone:
+            return
         self._isHovered = isHovered
         for button in self.headerButtons:
             button.setVisible(isHovered)
@@ -566,17 +615,29 @@ class Popup(QWidget):
 
     def mousePressEvent(self, event) -> None:
         if event.button() == Qt.MouseButton.LeftButton:
+            if self.isStandalone:
+                self._dragOffset = event.globalPosition().toPoint() - self.pos()
+                event.accept()
+                return
             self._pressX = event.globalPosition().x()
             self.moveAnimation.stop()
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event) -> None:
+        if self._dragOffset is not None:
+            self.move(event.globalPosition().toPoint() - self._dragOffset)
+            event.accept()
+            return
         if self._pressX is not None:
             offset = max(0, round(event.globalPosition().x() - self._pressX))
             self.move(self._targetPos.x() + offset, self._targetPos.y())
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event) -> None:
+        if self._dragOffset is not None and event.button() == Qt.MouseButton.LeftButton:
+            self._dragOffset = None
+            event.accept()
+            return
         super().mouseReleaseEvent(event)
         if event.button() != Qt.MouseButton.LeftButton or self._pressX is None:
             return
@@ -682,7 +743,6 @@ class PopupStack:
         self._doNotDisturb = doNotDisturb
         self._popups: list[Popup] = []  # 没有 parent，窗口靠这份列表活着
         self._pending: deque[Popup] = deque()
-        self._lastSoundAt = float("-inf")
         self._isClosed = False
         doNotDisturb.changed.connect(self._showPending)
         application = QGuiApplication.instance()
@@ -762,21 +822,8 @@ class PopupStack:
         self._arrange()
 
     def _playSound(self, popup: Popup) -> None:
-        if not popup.hasSound or time.monotonic() - self._lastSoundAt < SOUND_INTERVAL:
-            return
-        self._lastSoundAt = time.monotonic()
-        path = str(extractResource(SOUND_RESOURCE))
-        if sys.platform == "win32":
-            import winsound
-            winsound.PlaySound(path, winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_NODEFAULT)
-            return
-        for command in (("pw-play", "--media-role=Notification"),
-                        ("paplay", "--property=media.role=event"),
-                        ("canberra-gtk-play", "-f")):
-            if executable := shutil.which(command[0]):
-                subprocess.Popen([executable, *command[1:], path], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                return
-        logger.debug("找不到播放器，跳过提示音")
+        if popup.hasSound:
+            playNotificationSound()
 
     def _arrange(self) -> None:
         screen = QGuiApplication.primaryScreen()

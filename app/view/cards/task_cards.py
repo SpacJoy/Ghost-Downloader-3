@@ -449,6 +449,11 @@ class TaskCard(CardWidget):
             showProgress = Action(FluentIcon.BACK_TO_WINDOW, self.tr("在单独弹窗中显示下载进度"), self)
             showProgress.triggered.connect(lambda: signalBus.taskPopupRequested.emit(self._task))
             menu.addAction(showProgress)
+        elif (self._task.status == TaskStatus.COMPLETED and canShowPopup()
+              and self._task.hasOutputFile and isExisting(self._task.outputPath)):
+            showDone = Action(FluentIcon.BACK_TO_WINDOW, self.tr("在单独弹窗中显示"), self)
+            showDone.triggered.connect(lambda: signalBus.taskPopupRequested.emit(self._task))
+            menu.addAction(showDone)
         menu.addSeparator()
 
         copyUrl = Action(FluentIcon.COPY, self.tr("复制下载链接"), self)

@@ -74,6 +74,7 @@ class CategoryRow(QWidget):
         self.addButton.setToolTip(self.tr("新建分类"))
         self.addButton.installEventFilter(ToolTipFilter(self.addButton))
         self.refreshCategories()
+        self.applyDefault()
 
     def _initLayout(self) -> None:
         layout = QHBoxLayout(self)
@@ -109,14 +110,18 @@ class CategoryRow(QWidget):
             return {"category": None}
         return {"category": self.combo.currentData()}
 
-    def reset(self) -> None:
+    def applyDefault(self) -> None:
+        isEnabled = cfg.isCategoryEnabled.value
         self.checkBox.blockSignals(True)
-        self.checkBox.setChecked(False)
+        self.checkBox.setChecked(isEnabled)
         self.checkBox.blockSignals(False)
+        self.combo.setEnabled(isEnabled)
+
+    def reset(self) -> None:
         self.combo.blockSignals(True)
-        self.combo.setEnabled(False)
         self.combo.setCurrentIndex(0)
         self.combo.blockSignals(False)
+        self.applyDefault()
         self.refreshCategories()
 
     def _onToggled(self, checked: bool) -> None:
@@ -284,7 +289,6 @@ class NameRow(QWidget):
     def _initWidget(self) -> None:
         self.edit.setPlaceholderText(self.tr("文件名，留空则从链接自动推断"))
         self.edit.setClearButtonEnabled(True)
-        self.setEnabled(False)
 
     def _initLayout(self) -> None:
         layout = QHBoxLayout(self)

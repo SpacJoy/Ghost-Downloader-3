@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ctypes
 from ctypes import (
-    byref, c_byte, c_int, c_int16, c_int32, c_uint8, c_uint16, c_uint32, c_uint64, c_ulong, c_void_p, c_wchar_p,
+    byref, c_byte, c_int, c_int16, c_uint8, c_uint16, c_uint32, c_uint64, c_ulong, c_void_p, c_wchar_p,
 )
 from functools import cache, partial
 
@@ -27,12 +27,6 @@ class PROPVARIANT_VALUE(ctypes.Union):
 class PROPVARIANT(ctypes.Structure):
     _fields_ = [("vt", c_uint16), ("r1", c_uint16), ("r2", c_uint16), ("r3", c_uint16),
                 ("value", PROPVARIANT_VALUE)]
-
-
-class WINDOWPLACEMENT(ctypes.Structure):
-    _fields_ = [("length", c_uint32), ("flags", c_uint32), ("showCmd", c_uint32),
-                ("ptMinPosition", c_int32 * 2), ("ptMaxPosition", c_int32 * 2),
-                ("rcNormalPosition", c_int32 * 4)]
 
 
 def setWindowsProgress(hwnd: int, status: TaskStatus | None, progress: float | None) -> None:
@@ -91,19 +85,6 @@ def addTaskbarButton(hwnd: int) -> None:
     user32 = ctypes.windll.user32
     user32.SetWindowLongPtrW(hwnd, GWL_EXSTYLE, user32.GetWindowLongPtrW(hwnd, GWL_EXSTYLE) | WS_EX_APPWINDOW)
     user32.SetWindowLongPtrW(hwnd, GWL_STYLE, user32.GetWindowLongPtrW(hwnd, GWL_STYLE) | WS_MINIMIZEBOX | WS_SYSMENU)
-
-
-def minimizeWithoutActivating(hwnd: int, x: int, y: int, width: int, height: int) -> None:
-    # Qt 对 WA_ShowWithoutActivating 的窗口会把 SW_SHOWMINIMIZED 改成 SW_SHOWNOACTIVATE
-    addTaskbarButton(hwnd)
-    SW_SHOWMINNOACTIVE = 7
-    user32 = ctypes.windll.user32
-    placement = WINDOWPLACEMENT()
-    placement.length = ctypes.sizeof(WINDOWPLACEMENT)
-    user32.GetWindowPlacement(hwnd, ctypes.byref(placement))
-    placement.showCmd = SW_SHOWMINNOACTIVE
-    placement.rcNormalPosition = (c_int32 * 4)(x, y, x + width, y + height)
-    user32.SetWindowPlacement(hwnd, ctypes.byref(placement))
 
 
 @cache
