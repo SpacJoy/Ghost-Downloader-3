@@ -4,8 +4,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QEvent, QPoint, Qt, QTimer
-from PySide6.QtGui import QColor, QTextCursor, QTextOption
-from PySide6.QtWidgets import QApplication, QDialog, QFileDialog, QHBoxLayout, QSizePolicy, QVBoxLayout
+from PySide6.QtGui import QColor, QTextCursor
+from PySide6.QtWidgets import (
+    QApplication, QDialog, QFileDialog, QHBoxLayout, QSizePolicy, QVBoxLayout,
+)
 from qframelesswindow import FramelessDialog
 from qfluentwidgets import (
     FluentIcon, FluentStyleSheet, FluentTitleBar,
@@ -16,9 +18,11 @@ from qfluentwidgets import (
 
 from app.config.cfg import cfg
 from app.view.cards.draft_cards import FailedDraftCard
-from app.view.components.card_groups import DraftCardGroup, OptionCardGroup
-from app.view.components.editors import AutoSizingEdit, addRecentFolder
-from app.view.components.option_cards import OutputFolderCard, SubworkerCountCard
+from app.view.components.card_groups import DraftCardGroup
+from app.view.components.draft_form import (
+    CategoryRow, MetaColumn, NameRow, PathRow, SubworkerRow, UrlRow,
+)
+from app.view.components.editors import addRecentFolder
 from app.i18n import toLocalizedError
 
 if TYPE_CHECKING:
@@ -86,13 +90,19 @@ class TaskDraftDialog(MessageBoxBase):
         self._isStandalone = False
         self._dragPos = QPoint()
         self.titleLabel = SubtitleLabel(self.tr("添加任务"), self)
-        self.urlEdit = AutoSizingEdit(self)
+        self.urlRow = UrlRow(self)
+        self.categoryRow = CategoryRow(categoryService, self)
+        self.pathRow = PathRow(self)
+        self.nameRow = NameRow(self)
+        self.subworkerRow = SubworkerRow(self)
+        self.metaColumn = MetaColumn(self)
         self.progressBar = IndeterminateProgressBar(self)
         self.draftGroup = DraftCardGroup(self)
-        self.optionGroup = OptionCardGroup(self)
         self.batchButton = PushButton(FluentIcon.COPY, self.tr("批量添加"), self)
         self.importButton = PushButton(FluentIcon.FOLDER_ADD, self.tr("导入文件"), self)
         self.headerLayout = QHBoxLayout()
+        self.formLayout = QVBoxLayout()
+        self.mainLayout = QHBoxLayout()
 
         self._initWidget()
         self._initLayout()
@@ -102,11 +112,13 @@ class TaskDraftDialog(MessageBoxBase):
     def isActive(self) -> bool:
         return self.isVisible() or (self._isStandalone and self._standaloneWrapper.isVisible())
 
+    @property
+    def urlEdit(self):
+        return self.urlRow.edit
+
     def _initWidget(self) -> None:
         self.hide()
         self.widget.setFixedWidth(700)
-        self.urlEdit.setPlaceholderText(self.tr("添加多个下载链接时，请确保每行只有一个下载链接"))
-        self.urlEdit.setWordWrapMode(QTextOption.WrapMode.NoWrap)
         self.progressBar.hide()
         self._fileTypes = self._featureService.fileTypes()
         self.importButton.setVisible(bool(self._fileTypes))
@@ -125,24 +137,43 @@ class TaskDraftDialog(MessageBoxBase):
         self.buttonLayout.insertWidget(0, self.downloadButton, 1, Qt.AlignmentFlag.AlignVCenter)
         self.cancelButton.setText(self.tr("取消"))
 
-        self.optionGroup.addCard(OutputFolderCard(self.optionGroup))
-        self.optionGroup.addCard(SubworkerCountCard(self.optionGroup))
-
     def _initLayout(self) -> None:
         self.headerLayout.addWidget(self.titleLabel)
         self.headerLayout.addStretch(1)
         self.headerLayout.addWidget(self.batchButton)
         self.headerLayout.addWidget(self.importButton)
+
+        self.formLayout.setContentsMargins(0, 0, 0, 0)
+        self.formLayout.setSpacing(8)
+        self.formLayout.addWidget(self.categoryRow)
+        self.formLayout.addWidget(self.pathRow)
+        self.formLayout.addWidget(self.nameRow)
+
+        self.mainLayout.setContentsMargins(0, 0, 0, 0)
+        self.mainLayout.setSpacing(16)
+        self.mainLayout.addLayout(self.formLayout, 1)
+        self.mainLayout.addWidget(self.metaColumn, 0, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignRight)
+
         self.viewLayout.addLayout(self.headerLayout)
-        self.viewLayout.addWidget(self.urlEdit)
+        self.viewLayout.addWidget(self.urlRow)
         self.viewLayout.addWidget(self.progressBar)
+        self.viewLayout.addLayout(self.mainLayout)
+        self.viewLayout.addWidget(self.subworkerRow)
         self.viewLayout.addWidget(self.draftGroup)
-        self.viewLayout.addWidget(self.optionGroup)
+
+        self.draftGroup.setVisible(False)
 
     def _bind(self) -> None:
         self._parseTimer.setInterval(1000)
         self._parseTimer.timeout.connect(self._onParseNeeded)
-        self.urlEdit.textChanged.connect(self._parseTimer.start)
+        self.urlRow.edit.textChanged.connect(self._parseTimer.start)
+        self.urlRow.pasteRequested.connect(self._onPasteClicked)
+        self.categoryRow.changed.connect(self._onParseNeeded)
+        self.categoryRow.setVisible(cfg.isCategoryEnabled.value)
+        cfg.isCategoryEnabled.valueChanged.connect(self._onCategoryEnabledChanged)
+        self.pathRow.folderPicker.pathChanged.connect(self._onOptionsChanged)
+        self.subworkerRow.slider.valueChanged.connect(self._onOptionsChanged)
+        self.nameRow.changed.connect(self._applyName)
 
         self._draft.parsingBusyChanged.connect(self.progressBar.setVisible, owner=self)
         self._draft.parseSucceeded.connect(self._onParseSucceeded, owner=self)
@@ -160,12 +191,12 @@ class TaskDraftDialog(MessageBoxBase):
         from app.platform.desktop import raiseWindow
 
         if not self.isActive:
-            self.optionGroup.reset()
+            self._resetOptions()
 
         if self._isStandalone and self._standaloneWrapper.isVisible():
             raiseWindow(self._standaloneWrapper)
-            self.urlEdit.setFocus()
-            self.urlEdit.moveCursor(QTextCursor.MoveOperation.End)
+            self.urlRow.edit.setFocus()
+            self.urlRow.edit.moveCursor(QTextCursor.MoveOperation.End)
             return
 
         if self.isVisible() and not self._isStandalone:
@@ -178,16 +209,16 @@ class TaskDraftDialog(MessageBoxBase):
 
         raiseWindow(self._standaloneWrapper)
 
-        if not self.urlEdit.toPlainText().strip():
+        if not self.urlRow.edit.toPlainText().strip():
             urls = self._clipboardUrls()
             if urls:
-                self.urlEdit.appendPlainText("\n".join(urls))
-        self.urlEdit.setFocus()
-        self.urlEdit.moveCursor(QTextCursor.MoveOperation.End)
+                self.urlRow.edit.appendPlainText("\n".join(urls))
+        self.urlRow.edit.setFocus()
+        self.urlRow.edit.moveCursor(QTextCursor.MoveOperation.End)
 
     def showMask(self) -> int:
         if not self.isActive:
-            self.optionGroup.reset()
+            self._resetOptions()
         if self._isStandalone:
             self._toMask()
 
@@ -198,12 +229,12 @@ class TaskDraftDialog(MessageBoxBase):
         self.setShadowEffect(60, (0, 10), QColor(0, 0, 0, 50))
         self.setMaskColor(QColor(0, 0, 0, 76))
 
-        if not self.urlEdit.toPlainText().strip():
+        if not self.urlRow.edit.toPlainText().strip():
             urls = self._clipboardUrls()
             if urls:
-                self.urlEdit.appendPlainText("\n".join(urls))
-        self.urlEdit.setFocus()
-        self.urlEdit.moveCursor(QTextCursor.MoveOperation.End)
+                self.urlRow.edit.appendPlainText("\n".join(urls))
+        self.urlRow.edit.setFocus()
+        self.urlRow.edit.moveCursor(QTextCursor.MoveOperation.End)
 
         return self.exec()
 
@@ -214,7 +245,7 @@ class TaskDraftDialog(MessageBoxBase):
         toAdd = [stripped for u in urls if (stripped := u.strip()) and stripped not in existing]
         if not toAdd:
             return
-        self.urlEdit.appendPlainText("\n".join(toAdd))
+        self.urlRow.edit.appendPlainText("\n".join(toAdd))
         self._parseTimer.stop()
         self._onParseNeeded()
 
@@ -223,7 +254,7 @@ class TaskDraftDialog(MessageBoxBase):
             return
         newUrls = self._draft.addParsedTasks(tasks)
         if newUrls:
-            self.urlEdit.appendPlainText("\n".join(newUrls))
+            self.urlRow.edit.appendPlainText("\n".join(newUrls))
         self._parseTimer.stop()
         if error is not None:
             QTimer.singleShot(0, lambda: self._showAddError(tasks, error))
@@ -232,16 +263,20 @@ class TaskDraftDialog(MessageBoxBase):
         if code == QDialog.DialogCode.Accepted:
             self._draft.confirm(autoStart=autoStart)
             if self._draft.urls():
-                self.urlEdit.setPlainText("\n".join(self._draft.urls()))
+                self.urlRow.edit.setPlainText("\n".join(self._draft.urls()))
                 return
-            addRecentFolder(str(self.optionGroup.options()["outputFolder"]))
+            addRecentFolder(str(self.pathRow.options()["outputFolder"]))
         else:
             self._draft.clear()
 
-        self.urlEdit.clear()
+        self.urlRow.edit.clear()
         self._parseTimer.stop()
         self.draftGroup.clear()
         self.draftGroup.updateStats(0, 0, 0)
+        self.draftGroup.setVisible(False)
+        self.nameRow.setName("")
+        self.nameRow.setEnabled(False)
+        self.metaColumn.setMeta(0, None)
 
         if self._isStandalone:
             self._standaloneWrapper.hide()
@@ -297,16 +332,40 @@ class TaskDraftDialog(MessageBoxBase):
         if self.validate():
             self.done(QDialog.DialogCode.Accepted, autoStart=autoStart)
 
+    def _options(self) -> dict:
+        options: dict = {}
+        options.update(self.categoryRow.options())
+        options.update(self.pathRow.options())
+        options.update(self.subworkerRow.options())
+        return options
+
+    def _resetOptions(self) -> None:
+        self.categoryRow.reset()
+        self.pathRow.reset()
+        self.subworkerRow.reset()
+
+    def _onCategoryEnabledChanged(self, isEnabled: bool) -> None:
+        self.categoryRow.setVisible(isEnabled)
+
+    def _onOptionsChanged(self) -> None:
+        self._draft.setBaseOptions(self._options())
+
     def _onParseNeeded(self) -> None:
-        self._draft.setBaseOptions(self.optionGroup.options())
+        self._draft.setBaseOptions(self._options())
         self._draft.setUrls(self._urls())
 
     def _onParseSucceeded(self, url: str, task: Task) -> None:
+        self._buildCard(url)
+        self._refreshStats()
+
+    def _buildCard(self, url: str) -> None:
+        task = self._draft.taskByUrl(url)
+        if task is None:
+            return
         card = self._featureService.draftCard(task, self.draftGroup)
         card.categoryPicked.connect(lambda cid: self._draft.setUrlCategory(url, cid))
         card.editRequested.connect(lambda u=url: self._onEditRequested(u))
         self.draftGroup.addCard(url, card)
-        self._refreshStats()
 
     def _onEditRequested(self, url: str) -> None:
         from app.view.dialogs.edit_task import DraftEditDialog
@@ -320,11 +379,37 @@ class TaskDraftDialog(MessageBoxBase):
 
     def _onParseFailed(self, url: str, error: TaskError) -> None:
         if url not in self._urls():
-            self.urlEdit.appendPlainText(url)
+            self.urlRow.edit.appendPlainText(url)
         card = FailedDraftCard(url, toLocalizedError(error), self.draftGroup)
         card.refreshRequested.connect(lambda: self._draft.refresh(url))
         self.draftGroup.addCard(url, card)
         self._refreshStats()
+
+    def _onPasteClicked(self) -> None:
+        urls = self._clipboardUrls()
+        if not urls:
+            text = QApplication.clipboard().text().strip()
+            urls = [line.strip() for line in text.splitlines() if line.strip()]
+        if not urls:
+            return
+        self.addUrls(urls)
+        self.urlRow.edit.setFocus()
+        self.urlRow.edit.moveCursor(QTextCursor.MoveOperation.End)
+
+    def _applyName(self, name: str) -> None:
+        urls = self._urls()
+        if len(urls) != 1:
+            return
+        task = self._draft.taskByUrl(urls[0])
+        if task is None:
+            return
+        if not name:
+            self.nameRow.setName(task.name)
+            return
+        if task.name == name:
+            return
+        task.setName(name)
+        self._buildCard(urls[0])
 
     def _showAddError(self, tasks: list[Task], error: TaskError) -> None:
         bar = InfoBar(
@@ -349,7 +434,7 @@ class TaskDraftDialog(MessageBoxBase):
             return
         cfg.set(cfg.downloadFolder, folder)
         addRecentFolder(folder)
-        self.optionGroup.reset()
+        self.pathRow.reset()
         bar.close()
 
     def _onItemsChanged(self) -> None:
@@ -359,15 +444,53 @@ class TaskDraftDialog(MessageBoxBase):
     def _onCleared(self) -> None:
         self.draftGroup.clear()
         self.draftGroup.updateStats(0, 0, 0)
+        self._refreshStats()
 
     def _refreshStats(self) -> None:
-        tasks = [self._draft.taskByUrl(url) for url in self._draft.urls()]
+        urls = self._urls()
+        tasks = [self._draft.taskByUrl(url) for url in urls]
         successCount = sum(1 for t in tasks if t is not None)
         totalSize = sum(t.fileSize for t in tasks if t is not None and t.fileSize > 0)
         self.draftGroup.updateStats(successCount, self._draft.failCount(), totalSize)
+        self._refreshMeta(tasks)
+        self._refreshNameRow(urls, tasks)
+        self._refreshParseSection(urls)
+
+    def _refreshMeta(self, tasks: list) -> None:
+        if len(tasks) == 1 and tasks[0] is not None:
+            task = tasks[0]
+            self.metaColumn.setMeta(task.fileSize, self._canResume(task))
+            return
+        totalSize = sum(t.fileSize for t in tasks if t is not None and t.fileSize > 0)
+        self.metaColumn.setMeta(totalSize, None)
+
+    def _canResume(self, task: Task) -> bool | None:
+        steps = task.steps
+        if not steps:
+            return None
+        return getattr(steps[0], "canUseRangeRequests", None)
+
+    def _refreshNameRow(self, urls: list[str], tasks: list) -> None:
+        task = tasks[0] if len(urls) == 1 else None
+        self.nameRow.setEnabled(task is not None)
+        if task is None:
+            self.nameRow.setName("")
+            return
+        if not self.nameRow.name():
+            self.nameRow.setName(task.name)
+
+    def _refreshParseSection(self, urls: list[str]) -> None:
+        if not urls:
+            self.draftGroup.setVisible(False)
+            return
+        if len(urls) > 1:
+            self.draftGroup.setVisible(True)
+            return
+        item = self._draft.itemByUrl(urls[0])
+        self.draftGroup.setVisible(item is not None and item.error is not None)
 
     def _urls(self) -> list[str]:
-        text = self.urlEdit.toPlainText()
+        text = self.urlRow.edit.toPlainText()
         if not text:
             return []
         return [line.strip() for line in text.splitlines() if line.strip()]

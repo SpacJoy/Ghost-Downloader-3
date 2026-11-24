@@ -300,10 +300,12 @@ class MainWindow(MSFluentWindow):
 
     @cached_property
     def _draftDialog(self) -> TaskDraftDialog:
-        return TaskDraftDialog(
+        dialog = TaskDraftDialog(
             self._draft, self._featureService, self._categoryService,
             parent=self,
         )
+        dialog.pathRow.settingsRequested.connect(lambda: self.showPage(SettingPage))
+        return dialog
 
     def onPairRequested(self, request: PairRequest) -> None:
         content = self.tr(

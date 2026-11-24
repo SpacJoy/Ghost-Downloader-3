@@ -298,7 +298,7 @@ def startApp(application: Application, primaryInstance: PrimaryInstance, isSilen
         if not minimized and popupStack.countShown("task:") >= 3:
             return
         from app.view.shell.task_popup import TaskPopup
-        popup = TaskPopup(task, taskService, speedMeter.speedChanged)
+        popup = TaskPopup(task, taskService, speedMeter.speedChanged, plan)
         popup.openOnTaskbar = minimized
         popupStack.add(popup)
 
@@ -320,14 +320,15 @@ def startApp(application: Application, primaryInstance: PrimaryInstance, isSilen
             popupStack.close(f"task:{taskId}")
 
     def onTaskCompleted(task: Task) -> None:
-        notice = buildTaskCompleted(task, toFileIcon(task.outputPath))
         popupId = f"task:{task.taskId}"
-        if popupNotifier is not None and popupStack is not None and popupStack.has(popupId):
-            if not cfg.isNoticeSoundEnabled.value:
-                notice = replace(notice, sound=None)
-            popupNotifier.send(notice, popupId)
+        # 已经在弹进度窗的任务，原地换成完成窗，不再叠一条系统通知
+        if popupStack is not None and popupStack.has(popupId):
+            from app.view.shell.task_popup import TaskCompletedPopup
+            popup = TaskCompletedPopup(task)
+            popup.hasSound = cfg.isNoticeSoundEnabled.value
+            popupStack.add(popup)
             return
-        sendNotice(notice)
+        sendNotice(buildTaskCompleted(task, toFileIcon(task.outputPath)))
 
     def onTaskFailed(task: Task) -> None:
         popupId = f"task:{task.taskId}"
