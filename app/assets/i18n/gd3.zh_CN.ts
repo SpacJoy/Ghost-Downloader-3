@@ -1454,7 +1454,7 @@ http://example.com/{mp4,mkv}/video</source>
 <context>
     <name>DropOverlay</name>
     <message>
-        <location filename="../../view/windows/main_window.py" line="70"/>
+        <location filename="../../view/windows/main_window.py" line="66"/>
         <source>松开以添加任务</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2851,37 +2851,37 @@ http://example.com/{mp4,mkv}/video</source>
 <context>
     <name>MainWindow</name>
     <message>
-        <location filename="../../view/windows/main_window.py" line="434"/>
+        <location filename="../../view/windows/main_window.py" line="435"/>
         <source>程序发生异常</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="151"/>
+        <location filename="../../view/windows/main_window.py" line="148"/>
         <source>下载任务</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="155"/>
+        <location filename="../../view/windows/main_window.py" line="152"/>
         <source>新建任务</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="161"/>
+        <location filename="../../view/windows/main_window.py" line="156"/>
         <source>设置</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="316"/>
+        <location filename="../../view/windows/main_window.py" line="311"/>
         <source>未知</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="315"/>
+        <location filename="../../view/windows/main_window.py" line="310"/>
         <source>浏览器扩展</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="312"/>
+        <location filename="../../view/windows/main_window.py" line="307"/>
         <source>浏览器扩展正在请求连接到 Ghost Downloader。
 
 来源: {0}
@@ -2892,94 +2892,94 @@ http://example.com/{mp4,mkv}/video</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="318"/>
+        <location filename="../../view/windows/main_window.py" line="313"/>
         <source>浏览器扩展配对请求</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="319"/>
+        <location filename="../../view/windows/main_window.py" line="314"/>
         <source>允许配对</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="320"/>
+        <location filename="../../view/windows/main_window.py" line="315"/>
         <source>拒绝</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="330"/>
+        <location filename="../../view/windows/main_window.py" line="325"/>
         <source>浏览器扩展服务无法启动</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="333"/>
+        <location filename="../../view/windows/main_window.py" line="328"/>
         <source>Aria2 RPC 兼容服务无法启动</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="346"/>
+        <location filename="../../view/windows/main_window.py" line="341"/>
         <source>前往设置</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="372"/>
+        <location filename="../../view/windows/main_window.py" line="367"/>
         <source>查看详情</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="435"/>
+        <location filename="../../view/windows/main_window.py" line="436"/>
         <source>点击&quot;确定&quot;后将复制错误信息并打开反馈页面。
 
 {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="439"/>
+        <location filename="../../view/windows/main_window.py" line="440"/>
         <source>查看日志</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="486"/>
+        <location filename="../../view/windows/main_window.py" line="487"/>
         <source>是否完全退出程序？</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="487"/>
+        <location filename="../../view/windows/main_window.py" line="488"/>
         <source>后台运行时可通过系统托盘图标重新打开。</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="490"/>
+        <location filename="../../view/windows/main_window.py" line="491"/>
         <source>退出程序</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="491"/>
+        <location filename="../../view/windows/main_window.py" line="492"/>
         <source>继续在后台运行</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="492"/>
+        <location filename="../../view/windows/main_window.py" line="493"/>
         <source>记住我的选择</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="358"/>
+        <location filename="../../view/windows/main_window.py" line="353"/>
         <source>检测到新版本</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="359"/>
+        <location filename="../../view/windows/main_window.py" line="354"/>
         <source>最新版本: {0}</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="366"/>
+        <location filename="../../view/windows/main_window.py" line="361"/>
         <source>立即下载</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/windows/main_window.py" line="375"/>
+        <location filename="../../view/windows/main_window.py" line="370"/>
         <source>请作者喝咖啡</source>
         <translation type="unfinished"></translation>
     </message>
@@ -4845,38 +4845,38 @@ http://example.com/{mp4,mkv}/video</source>
 <context>
     <name>SystemTrayIcon</name>
     <message>
-        <location filename="../../view/shell/mac_status_item.py" line="105"/>
-        <location filename="../../view/shell/tray.py" line="184"/>
+        <location filename="../../view/shell/mac_status_item.py" line="103"/>
+        <location filename="../../view/shell/tray.py" line="182"/>
         <source>仪表盘</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/mac_status_item.py" line="106"/>
-        <location filename="../../view/shell/tray.py" line="186"/>
+        <location filename="../../view/shell/mac_status_item.py" line="104"/>
+        <location filename="../../view/shell/tray.py" line="184"/>
         <source>新建任务</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/mac_status_item.py" line="107"/>
-        <location filename="../../view/shell/tray.py" line="188"/>
+        <location filename="../../view/shell/mac_status_item.py" line="105"/>
+        <location filename="../../view/shell/tray.py" line="186"/>
         <source>全部开始</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/mac_status_item.py" line="108"/>
-        <location filename="../../view/shell/tray.py" line="190"/>
+        <location filename="../../view/shell/mac_status_item.py" line="106"/>
+        <location filename="../../view/shell/tray.py" line="188"/>
         <source>全部暂停</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/mac_status_item.py" line="109"/>
-        <location filename="../../view/shell/tray.py" line="192"/>
+        <location filename="../../view/shell/mac_status_item.py" line="107"/>
+        <location filename="../../view/shell/tray.py" line="190"/>
         <source>设置</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../view/shell/mac_status_item.py" line="111"/>
-        <location filename="../../view/shell/tray.py" line="195"/>
+        <location filename="../../view/shell/mac_status_item.py" line="109"/>
+        <location filename="../../view/shell/tray.py" line="193"/>
         <source>退出程序</source>
         <translation type="unfinished"></translation>
     </message>
