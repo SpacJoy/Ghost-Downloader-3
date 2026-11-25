@@ -231,6 +231,9 @@ function Run-Package {
     [System.IO.File]::WriteAllText($tempIss, $text, (New-Object System.Text.UTF8Encoding($true)))
     try {
         & $iscc /Qp $tempIss
+        # ISCC 在 /Qp 下会往 stdout 打一个不带换行的 "Preprocessing"，之后不补换行，
+        # 后面的提示就会粘在同一行末尾，看起来像卡住没输出。这里先断行。
+        Write-Host ""
         if ($LASTEXITCODE -ne 0) {
             Write-Host "安装包编译失败，退出码 $LASTEXITCODE。" -ForegroundColor Red
             return
