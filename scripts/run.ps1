@@ -290,10 +290,12 @@ while ($true) {
         "4" { Invoke-Mode -Name "list" }
         "5" { Invoke-Mode -Name "kill" }
         "6" {
-            $arch = Read-Host ("目标架构，回车用本机 " + (Get-MachineArch) + "（x86_64/arm64）")
-            $version = Read-Host ("版本号，回车用 constants.py 里的 " + (Read-BuildVersion))
-            $installer = Read-Host "要安装包吗？出的话输入 y"
-            Run-Package -TargetArch $arch -TargetVersion $version -WithInstaller:($installer -match "^y")
+            # 变量名不能叫 $arch/$version/$installer：PowerShell 变量名大小写不敏感，
+            # 那就是参数 $Arch（带 ValidateSet）本人，回车给空串会当场抛 MetadataError
+            $archInput = Read-Host ("目标架构，回车用本机 " + (Get-MachineArch) + "（x86_64/arm64）")
+            $versionInput = Read-Host ("版本号，回车用 constants.py 里的 " + (Read-BuildVersion))
+            $installerInput = Read-Host "要安装包吗？出的话输入 y"
+            Run-Package -TargetArch $archInput -TargetVersion $versionInput -WithInstaller:($installerInput -match "^y")
         }
         "0" { return }
         default { Write-Host "没有这一项，重新选。" -ForegroundColor DarkYellow }
