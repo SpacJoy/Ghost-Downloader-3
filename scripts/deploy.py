@@ -1,7 +1,9 @@
+import argparse
 import ast
 import importlib.util
 import os
 import plistlib
+import re
 import shutil
 import subprocess
 import sys
@@ -169,7 +171,7 @@ def findIncludes() -> tuple[list[str], list[str]]:
     return packages, modules
 
 
-def buildArgs() -> list[str]:
+def buildArgs(version: str) -> list[str]:
     includePackages, includeModules = findIncludes()
     from qfluentwidgets._rc import RCC_PATH as QFW_RCC_PATH
 
@@ -202,8 +204,8 @@ def buildArgs() -> list[str]:
             '--include-data-dir=app/assets/file_icons=app/assets/file_icons',
             '--company-name=XiaoYouChR',
             '--product-name="Ghost Downloader"',
-            f'--file-version={BUILD_VERSION}',
-            f'--product-version={BUILD_VERSION}',
+            f'--file-version={version}',
+            f'--product-version={version}',
             '--file-description="Ghost Downloader"',
             f'--copyright="Copyright(C) {YEAR} {AUTHOR}"',
             '--output-dir=dist',
@@ -222,7 +224,7 @@ def buildArgs() -> list[str]:
             "--macos-create-app-bundle",
             "--assume-yes-for-downloads",
             "--macos-app-mode=gui",
-            f"--macos-app-version={BUILD_VERSION}",
+            f"--macos-app-version={version}",
             "--macos-app-macos-min-version=13.0",
             "--macos-app-icon=app/assets/logo.icns",
             f'--copyright="Copyright(C) {YEAR} {AUTHOR}"',
@@ -323,9 +325,19 @@ def patchInfoPlist() -> None:
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description="Build the standalone app with Nuitka")
+    parser.add_argument(
+        "--version",
+        default=BUILD_VERSION,
+        help="写进二进制属性的版本号，默认取 app/config/constants.py 里的 VERSION",
+    )
+    options = parser.parse_args()
+    if not re.fullmatch(r"\d+(\.\d+){0,3}", options.version):
+        raise SystemExit(f"--version 只能是数字点号，比如 4.6 或 4.6.1：{options.version}")
+
     os.chdir(REPO)
 
-    args = buildArgs()
+    args = buildArgs(options.version)
     command = ' '.join(args)
 
     print(command)

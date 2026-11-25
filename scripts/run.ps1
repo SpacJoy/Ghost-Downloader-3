@@ -10,15 +10,31 @@
     表现就是"改了代码重启却没变化"。安装版 exe 占同一把锁，所以启动前一并清掉。
 
 .PARAMETER Mode
-    跳过菜单直接执行：bg（后台）、fg（前台）、log（启动并跟随日志）、list（只看实例）、kill（只杀）。
+    跳过菜单直接执行：bg（后台）、fg（前台）、log（启动并跟随日志）、list（只看实例）、kill（只杀）、
+    package（Nuitka 打包）。
+
+.PARAMETER Arch
+    打包的目标架构：x86_64 或 arm64。Nuitka 不能交叉编译，必须和本机一致，默认本机。
+
+.PARAMETER Version
+    打包时写进二进制属性和安装包的版本号，默认取 app/config/constants.py 里的 VERSION。
+
+.PARAMETER Installer
+    打包同时出 Inno Setup 安装包，需要本机装了 Inno Setup 6。
 
 .EXAMPLE
     .\scripts\run.ps1
     .\scripts\run.ps1 -Mode log
+    .\scripts\run.ps1 -Mode package -Installer
+    .\scripts\run.ps1 -Mode package -Version 4.6.1 -Installer
 #>
 param(
-    [ValidateSet("bg", "fg", "log", "list", "kill")]
-    [string]$Mode
+    [ValidateSet("bg", "fg", "log", "list", "kill", "package")]
+    [string]$Mode,
+    [ValidateSet("x86_64", "arm64")]
+    [string]$Arch,
+    [string]$Version,
+    [switch]$Installer
 )
 
 $ErrorActionPreference = "Stop"
@@ -29,6 +45,10 @@ $Python = Join-Path $Root ".venv\Scripts\python.exe"
 $Pythonw = Join-Path $Root ".venv\Scripts\pythonw.exe"
 $LogFile = Join-Path $env:LOCALAPPDATA "GhostDownloader\GhostDownloader.log"
 $EntryName = (Split-Path -Leaf $Entry).ToLower()
+$Constants = Join-Path $Root "app\config\constants.py"
+$Deploy = Join-Path $PSScriptRoot "deploy.py"
+$Iss = Join-Path $PSScriptRoot "Ghost-Downloader-3.iss"
+$DistDir = Join-Path $Root "dist\Ghost-Downloader-3.dist"
 
 function Get-Instances {
     # 源码版跑在 python/pythonw 上，安装版是 Ghost-Downloader-3.exe，三类都算
@@ -113,6 +133,116 @@ function Watch-Log {
     Get-Content $LogFile -Wait -Tail 20
 }
 
+function Read-BuildVersion {
+    if (-not (Test-Path $Constants)) { return "" }
+    $text = Get-Content $Constants -Raw -Encoding UTF8
+    $match = [regex]::Match($text, '(?m)^VERSION\s*=\s*"([^"]+)"')
+    if (-not $match.Success) { return "" }
+    return $match.Groups[1].Value.Split("-")[0]
+}
+
+function Get-MachineArch {
+    # 32 位 PowerShell 跑在 ARM64 上时 ARCHITECTURE 是 x86，真架构在 ARCHITEW6432
+    if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64" -or $env:PROCESSOR_ARCHITEW6432 -eq "ARM64") { return "arm64" }
+    return "x86_64"
+}
+
+function Find-Iscc {
+    $candidates = @(
+        (Join-Path $env:LOCALAPPDATA "Programs\Inno Setup 6\ISCC.exe"),
+        "C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+        "C:\Program Files\Inno Setup 6\ISCC.exe"
+    )
+    foreach ($candidate in $candidates) {
+        if (Test-Path $candidate) { return $candidate }
+    }
+    return ""
+}
+
+function Run-Package {
+    param([string]$TargetArch, [string]$TargetVersion, [switch]$WithInstaller)
+    if (-not (Test-Path $Python)) {
+        Write-Host "找不到 $Python，先确认虚拟环境在不在。" -ForegroundColor Red
+        return
+    }
+
+    if (-not $TargetVersion) { $TargetVersion = Read-BuildVersion }
+    $targetVersion = $TargetVersion
+    if ($targetVersion -notmatch '^\d+(\.\d+){0,3}$') {
+        Write-Host "版本号只能是数字点号，比如 4.6 或 4.6.1：$targetVersion" -ForegroundColor Red
+        return
+    }
+
+    if ($TargetArch -and $TargetArch -notin @("x86_64", "arm64")) {
+        Write-Host "架构只能是 x86_64 或 arm64：$TargetArch" -ForegroundColor Red
+        return
+    }
+
+    $machineArch = Get-MachineArch
+    if (-not $TargetArch) { $TargetArch = $machineArch }
+    $targetArch = $TargetArch
+    if ($targetArch -ne $machineArch) {
+        Write-Host "本机是 $machineArch，Nuitka 不能交叉编译，$targetArch 的包得在 $targetArch 机器上打。" -ForegroundColor Red
+        return
+    }
+
+    if (-not (Stop-Instances)) { return }
+
+    Write-Host "开始构建：版本 $targetVersion，架构 $targetArch" -ForegroundColor Cyan
+    & $Python $Deploy --version $targetVersion
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "Nuitka 构建失败，退出码 $LASTEXITCODE。" -ForegroundColor Red
+        return
+    }
+
+    if (-not $WithInstaller) {
+        Write-Host "构建完成，产物在 $Root\dist。" -ForegroundColor Green
+        return
+    }
+
+    $iscc = Find-Iscc
+    if (-not $iscc) {
+        Write-Host "找不到 ISCC.exe，装了 Inno Setup 6 再来。" -ForegroundColor Red
+        return
+    }
+    if (-not (Test-Path $DistDir)) {
+        Write-Host "找不到 $DistDir，构建产物不完整。" -ForegroundColor Red
+        return
+    }
+
+    $languagesIss = Join-Path $Root "build\installer\languages.iss"
+    if (-not (Test-Path $languagesIss)) {
+        Write-Host "安装包语言文件还不存在，先联网生成一次。" -ForegroundColor DarkGray
+        & $Python (Join-Path $PSScriptRoot "fetch_installer_languages.py")
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "生成语言文件失败，检查网络后重试。" -ForegroundColor Red
+            return
+        }
+    }
+
+    # 不动仓库里的 .iss：复制一份到同目录，SourceDir=.. 之类的相对路径才不会错位，
+    # 在副本里换掉版本号和架构字面量，编完删掉。
+    if ($targetArch -eq "arm64") { $innoArch = "arm64" } else { $innoArch = "x64compatible and not arm64" }
+    $tempIss = Join-Path $PSScriptRoot "Ghost-Downloader-3.local.iss"
+    $text = Get-Content $Iss -Raw -Encoding UTF8
+    $text = $text.Replace('"APPLICATION_VERSION"', '"' + $targetVersion + '"')
+    $text = $text.Replace('"APPLICATION_ARCHITECTURES"', '"' + $innoArch + '"')
+    # 带 BOM 写，ISCC 靠 BOM 判断 UTF-8；.iss 里有中文注释，无 BOM 会按 ANSI 解析成乱码
+    [System.IO.File]::WriteAllText($tempIss, $text, (New-Object System.Text.UTF8Encoding($true)))
+    try {
+        & $iscc /Qp $tempIss
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "安装包编译失败，退出码 $LASTEXITCODE。" -ForegroundColor Red
+            return
+        }
+    }
+    finally {
+        Remove-Item $tempIss -Force -ErrorAction SilentlyContinue
+    }
+
+    Write-Host "安装包好了：$Root\dist\Ghost-Downloader-v$targetVersion-Windows-Setup.exe" -ForegroundColor Green
+}
+
 function Invoke-Mode {
     param([string]$Name)
     switch ($Name) {
@@ -131,6 +261,7 @@ function Invoke-Mode {
             Start-Background
             Watch-Log
         }
+        "package" { Run-Package -TargetArch $Arch -TargetVersion $Version -WithInstaller:$Installer }
     }
 }
 
@@ -147,6 +278,7 @@ while ($true) {
     Write-Host "  3. 启动并跟随日志（测试最顺手）"
     Write-Host "  4. 只看正在运行的实例"
     Write-Host "  5. 只杀旧实例"
+    Write-Host "  6. 打包（Nuitka 构建，可选出安装包）"
     Write-Host "  0. 退出"
     Write-Host ""
     $choice = Read-Host "选一个"
@@ -157,12 +289,18 @@ while ($true) {
         "3" { Invoke-Mode -Name "log" }
         "4" { Invoke-Mode -Name "list" }
         "5" { Invoke-Mode -Name "kill" }
+        "6" {
+            $arch = Read-Host ("目标架构，回车用本机 " + (Get-MachineArch) + "（x86_64/arm64）")
+            $version = Read-Host ("版本号，回车用 constants.py 里的 " + (Read-BuildVersion))
+            $installer = Read-Host "要安装包吗？出的话输入 y"
+            Run-Package -TargetArch $arch -TargetVersion $version -WithInstaller:($installer -match "^y")
+        }
         "0" { return }
         default { Write-Host "没有这一项，重新选。" -ForegroundColor DarkYellow }
     }
 
     # 前台模式回来后就回到菜单，方便改代码再起
-    if ($choice.Trim() -in @("1", "2", "3", "4", "5")) {
+    if ($choice.Trim() -in @("1", "2", "3", "4", "5", "6")) {
         Write-Host ""
         [void](Read-Host "按回车回到菜单")
         # 输出被重定向时没有控制台句柄，Clear-Host 会抛错，出错就只空一行

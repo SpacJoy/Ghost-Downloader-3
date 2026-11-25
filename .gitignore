@@ -54,3 +54,4 @@ browser_extension/firefox/
 # 运行期生成与本地临时产物
 /config/
 /tmp/
+/scripts/Ghost-Downloader-3.local.iss
