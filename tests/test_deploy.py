@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from app.config.constants import BUILD_VERSION
 from scripts.deploy import buildArgs, findImports, findQfwModules
 
 
@@ -96,7 +97,7 @@ def test_find_imports_collects_modules_and_submodules(tmp_path: Path):
 
 
 def test_build_args_shakes_qfw_and_feature_deps():
-    args = buildArgs()
+    args = buildArgs(BUILD_VERSION)
 
     assert "--include-package=qfluentwidgets" not in args
     assert "--include-package=qrcode" not in args
@@ -111,7 +112,7 @@ def test_build_args_shakes_qfw_and_feature_deps():
 
 
 def test_build_args_includes_runtime_and_pack_stdlib():
-    args = buildArgs()
+    args = buildArgs(BUILD_VERSION)
 
     assert "--include-module=optparse" in args
     assert "--include-module=email.message" in args
