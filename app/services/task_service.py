@@ -278,6 +278,7 @@ class TaskService:
     taskCompleted = Signal(object)
     taskFailed = Signal(object)
     tasksAllCompleted = Signal()
+    runningChanged = Signal(bool)
     seedingStarted = Signal(object)
     seedingStopped = Signal(object)
     checksumStarted = Signal(object)
@@ -311,7 +312,6 @@ class TaskService:
         self._fileWatcher = fileWatcher
         self._watchedPaths: dict[str, str] = {}
         self._fileWatcher.fileChanged.connect(self._onWatchedFileChanged)
-        self._hasNotifiedDeleteDenied = False
         self._flushWorkId: str | None = None
 
         cfg.maxTaskNum.valueChanged.connect(self._rebalance)
@@ -423,8 +423,7 @@ class TaskService:
         self.cancelChecksum(task)
         self._unwatchFile(task)
         canDelete = shouldDeleteFiles and self._canDeleteIn(task.outputFolder)
-        if shouldDeleteFiles and not canDelete and not self._hasNotifiedDeleteDenied:
-            self._hasNotifiedDeleteDenied = True
+        if shouldDeleteFiles and not canDelete:
             self.fileDeleteDenied.emit()
         def onStopped():
             if canDelete:
@@ -658,6 +657,7 @@ class TaskService:
             if task is not None:
                 self._dispatch(task)
         self._refreshSpeedMeter()
+        self.runningChanged.emit(self._queue.runningCount() > 0)
 
     def _refreshSpeedMeter(self) -> None:
         if self._queue.runningCount() or self._seeding:

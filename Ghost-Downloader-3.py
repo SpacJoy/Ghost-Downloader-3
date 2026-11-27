@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import sys
 import traceback
+from contextlib import suppress
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
@@ -108,6 +109,9 @@ def startApp(application: Application, primaryInstance: PrimaryInstance, isSilen
     from app.services.plan import Plan
     plan = Plan(allCompleted=lambda: taskService.runningCount() == 0)
     taskService.tasksAllCompleted.connect(plan.trigger)
+
+    from app.platform.desktop_keepalive import buildSleepInhibitor
+    taskService.runningChanged.connect(buildSleepInhibitor())
 
     application.clipboardListener = ClipboardListener(featureService.matchPassive, parent=application)
     cfg.isClipboardListenerEnabled.valueChanged.connect(application.clipboardListener.setEnabled)
@@ -239,10 +243,6 @@ def startApp(application: Application, primaryInstance: PrimaryInstance, isSilen
     if sys.platform == "linux":
         from app.platform.taskbar import setLauncherProgress
         speedMeter.speedChanged.connect(lambda _: setLauncherProgress(taskService.overallProgress()))
-
-    from app.platform.desktop_keepalive import hold, release
-    taskService.taskStarted.connect(lambda _: hold())
-    taskService.tasksAllCompleted.connect(release)
 
     from app.platform.desktop_notification import (
         Popup, PopupNotifier, PopupStack, SystemNotifier, buildClipboardRequest,
@@ -414,23 +414,27 @@ def startApp(application: Application, primaryInstance: PrimaryInstance, isSilen
             updateService.download(info.targetId)
         elif info.targetId != "app" and info.state == UpdateState.READY:
             if window is not None:
-                from qfluentwidgets import InfoBar, InfoBarPosition
-                InfoBar.success(
-                    window.tr("功能包更新"),
-                    window.tr("{0} 将在下次启动时生效").format(info.label),
-                    duration=5000,
-                    position=InfoBarPosition.BOTTOM_RIGHT,
-                    parent=window,
-                )
+                window.showPackUpdateReady(info.label)
     updateService.changed.connect(onUpdateChanged)
     checkUpdateAtStartup(updateService)
 
-    def onAboutToQuit():
-        engine.stop()
-        updateService.apply()
-        coroutineRunner.stop()
+    def onTerminated() -> None:
+        with suppress(RuntimeError):
+            application.aboutToQuit.disconnect(updateService.apply)
 
-    application.aboutToQuit.connect(onAboutToQuit)
+    application.aboutToQuit.connect(engine.stop)
+    application.aboutToQuit.connect(updateService.apply)
+    application.aboutToQuit.connect(coroutineRunner.stop)
+    application.terminated.connect(onTerminated)
+    if sys.platform == "win32":
+        from app.platform.windows import ShutdownListener
+        shutdownListener = ShutdownListener(
+            application.translate("Shutdown", "正在保存任务进度"),
+            icon=QIcon(":/image/logo.png"),
+        )
+        application.shutdownListener = shutdownListener
+        shutdownListener.triggered.connect(onTerminated)
+        application.aboutToQuit.connect(shutdownListener.close)
 
     from app.cli import Cli
     cli = Cli(taskService, featureService.parse, coroutineRunner.submit,
