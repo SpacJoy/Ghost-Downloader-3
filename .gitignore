@@ -55,3 +55,5 @@ browser_extension/firefox/
 /config/
 /tmp/
 /scripts/Ghost-Downloader-3.local.iss
+/pastes
+/backups
